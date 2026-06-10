@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>シフト計算機（16日始まり）</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 10px;
+            background-color: #f0f2f5;
+        }
+        /* ▼ カレンダーのレイアウト（CSS Grid） ▼ */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr); /* 7列（1週間）で均等に並べる */
+            gap: 10px; /* マスの隙間 */
+            margin-bottom: 20px;
+        }
+        /* ▼ 1日分のマス ▼ */
+        .day-cell {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* はみ出した部分を隠す */
+            height: 120px;
+        }
+        /* 上半分（クリックでプラス） */
+        .half-up {
+            flex: 1; /* 残りの高さを埋める */
+            background-color: #e6f2ff;
+            cursor: pointer;
+            text-align: center;
+            padding-top: 5px;
+            user-select: none; /* テキスト選択を防止 */
+        }
+        .half-up:active { background-color: #cce5ff; } /* クリックした瞬間の色 */
+        
+        /* 下半分（クリックでマイナス） */
+        .half-down {
+            height: 25px;
+            background-color: #ffe6e6;
+            cursor: pointer;
+            text-align: center;
+            font-size: 0.8em;
+            color: #cc0000;
+            user-select: none;
+            line-height: 25px; /* 文字を縦の中央に */
+        }
+        .half-down:active { background-color: #ffcccc; }
+
+        /* 手動調整の入力欄 */
+        .adjust-box {
+            padding: 5px;
+            font-size: 0.8em;
+            text-align: center;
+            background: #fff;
+            border-top: 1px solid #eee;
+        }
+        .adjust-box input {
+            width: 40px;
+            text-align: right;
+            padding: 2px;
+        }
+
+        .date-label { font-size: 0.9em; color: #555; }
+        .koma-label { font-size: 1.4em; font-weight: bold; margin-top: 2px; }
+
+        /* ▼ 合計表示エリア ▼ */
+        .total-area {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            font-size: 1.3em;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+            position: sticky; /* 画面下部に固定 */
+            bottom: 10px;
+        }
+        /* 80時間超過時の警告スタイル */
+        .warning {
+            color: white;
+            background-color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <h2>月間労働時間計算 (16日〜15日)</h2>
+    
+    <div class="calendar-grid" id="calendar">
+        </div>
+
+    <div id="total-banner" class="total-area">
+        総合計: <span id="grand-total-hours">0</span> 時間 <span id="grand-total-mins">0</span> 分<br>
+        <div id="warning-msg" style="font-size: 0.8em; margin-top: 5px; display: none;">
+            ⚠️ 労働時間が80時間を超過しています！
+        </div>
+    </div>
+
+    <script>
+        // 1. 16日から15日までの日付の配列（リスト）を作る
+        const days = [];
+        for (let i = 16; i <= 31; i++) days.push(i);
+        for (let i = 1; i <= 15; i++) days.push(i);
+
+        // 2. 各日付のデータ（コマ数と調整時間）を保存する「状態（State）」
+        // 今回から、HTMLの入力欄を直接見に行くのではなく、この変数を書き換えるようにします。
+        const shiftData = days.map(() => ({ koma: 0, adjust: 0 }));
+
+        // 画面が開かれたときの処理
+        window.onload = function() {
+            renderCalendar();
+            calculateAll();
+        };
+
+        // 3. カレンダーのHTMLを生成する関数
+        function renderCalendar() {
+            const calendarDiv = document.getElementById('calendar');
+            calendarDiv.innerHTML = ''; // 一度中身を空にする
+
+            days.forEach((day, index) => {
+                const cell = document.createElement('div');
+                cell.className = 'day-cell';
+
+                // 上半分（コマ追加）、下半分（コマ減少）、調整入力欄を配置
+                cell.innerHTML = `
+                    <div class="half-up" onclick="changeKoma(${index}, 1)">
+                        <div class="date-label">${day}日</div>
+                        <div class="koma-label">${shiftData[index].koma} コマ</div>
+                    </div>
+                    <div class="half-down" onclick="changeKoma(${index}, -1)">
+                        ▼ 1コマ減らす
+                    </div>
+                    <div class="adjust-box">
+                        調整: <input type="number" value="${shiftData[index].adjust}" onchange="changeAdjust(${index}, this.value)"> 分
+                    </div>
+                `;
+                calendarDiv.appendChild(cell);
+            });
+        }
+
+        // 4. コマ数を増減する処理
+        function changeKoma(index, amount) {
+            let newKoma = shiftData[index].koma + amount;
+            if (newKoma < 0) newKoma = 0; // 0未満にはならないようにする
+            
+            shiftData[index].koma = newKoma; // データを更新
+            renderCalendar(); // 画面を再描画
+            calculateAll();   // 合計を再計算
+        }
+
+        // 5. 手動調整の時間を更新する処理
+        function changeAdjust(index, value) {
+            shiftData[index].adjust = parseInt(value) || 0;
+            calculateAll();
+        }
+
+        // 6. 全体の計算とアラート判定
+        function calculateAll() {
+            let grandTotalMinutes = 0;
+
+            // 保存されているデータを使って計算
+            shiftData.forEach(data => {
+                if (data.koma >= 1) {
+                    grandTotalMinutes += 35 + (80 * data.koma) + (10 * (data.koma - 1)) + data.adjust;
+                } else {
+                    grandTotalMinutes += data.adjust;
+                }
+            });
+
+            // 時間と分に変換
+            const hours = Math.floor(grandTotalMinutes / 60);
+            const mins = grandTotalMinutes % 60;
+
+            // 画面の数字を更新
+            document.getElementById('grand-total-hours').innerText = hours;
+            document.getElementById('grand-total-mins').innerText = mins;
+
+            // ▼ 80時間（4800分）を超えた際のアラート処理 ▼
+            const totalBanner = document.getElementById('total-banner');
+            const warningMsg = document.getElementById('warning-msg');
+            
+            if (grandTotalMinutes > 4800) { // 80時間 * 60分 = 4800分
+                totalBanner.classList.add('warning');
+                warningMsg.style.display = 'block';
+            } else {
+                totalBanner.classList.remove('warning');
+                warningMsg.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
