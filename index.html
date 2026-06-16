@@ -2,72 +2,75 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>シフト計算機（16日始まり）</title>
+    <title>シフト計算機（詳細設定付き）</title>
     <style>
         body {
             font-family: sans-serif;
             padding: 10px;
             background-color: #f0f2f5;
         }
-        /* ▼ カレンダーのレイアウト（CSS Grid） ▼ */
         .calendar-grid {
             display: grid;
-            grid-template-columns: repeat(7, 1fr); /* 7列（1週間）で均等に並べる */
-            gap: 10px; /* マスの隙間 */
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
             margin-bottom: 20px;
         }
-        /* ▼ 1日分のマス ▼ */
         .day-cell {
             background: white;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             display: flex;
             flex-direction: column;
-            overflow: hidden; /* はみ出した部分を隠す */
-            height: 120px;
+            overflow: hidden;
+            height: 110px;
         }
-        /* 上半分（クリックでプラス） */
+        
+        /* ▼ 上半分（クリックで通常コマプラス）の基本設定 ▼ */
         .half-up {
-            flex: 1; /* 残りの高さを埋める */
-            background-color: #e6f2ff;
+            flex: 1;
             cursor: pointer;
             text-align: center;
             padding-top: 5px;
-            user-select: none; /* テキスト選択を防止 */
+            user-select: none;
+            position: relative;
+            transition: background-color 0.2s; /* 色がフワッと変わるアニメーション */
         }
-        .half-up:active { background-color: #cce5ff; } /* クリックした瞬間の色 */
         
-        /* 下半分（クリックでマイナス） */
+        /* ▼ シフトの状態に合わせた背景色クラス ▼ */
+        .bg-empty { background-color: #ffffff; } /* シフトなし：白 */
+        .bg-active { background-color: #cce5ff; } /* 通常シフトのみ：水色 */
+        .bg-detail { background-color: #8cb3d9; } /* 詳細あり：濃い青（水色と同系色） */
+        
+        .half-up:active { opacity: 0.7; } /* クリックした瞬間の反応 */
+        
+        .kebab-menu {
+            position: absolute;
+            top: 5px;
+            right: 8px;
+            font-size: 1.2em;
+            color: #333;
+            cursor: pointer;
+            padding: 0 5px;
+            border-radius: 4px;
+        }
+        .kebab-menu:hover { background-color: rgba(0,0,0,0.1); }
+
+        /* ▼ 下半分（濃いグレーに変更） ▼ */
         .half-down {
             height: 25px;
-            background-color: #ffe6e6;
+            background-color: #6c757d; /* 落ち着いた濃いグレー */
             cursor: pointer;
             text-align: center;
             font-size: 0.8em;
-            color: #cc0000;
+            color: #ffffff; /* 文字色は白に変更して見やすく */
             user-select: none;
-            line-height: 25px; /* 文字を縦の中央に */
+            line-height: 25px;
         }
-        .half-down:active { background-color: #ffcccc; }
-
-        /* 手動調整の入力欄 */
-        .adjust-box {
-            padding: 5px;
-            font-size: 0.8em;
-            text-align: center;
-            background: #fff;
-            border-top: 1px solid #eee;
-        }
-        .adjust-box input {
-            width: 40px;
-            text-align: right;
-            padding: 2px;
-        }
+        .half-down:active { background-color: #5a6268; }
 
         .date-label { font-size: 0.9em; color: #555; }
         .koma-label { font-size: 1.4em; font-weight: bold; margin-top: 2px; }
 
-        /* ▼ 合計表示エリア ▼ */
         .total-area {
             background-color: white;
             padding: 20px;
@@ -76,21 +79,52 @@
             font-weight: bold;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             text-align: center;
-            position: sticky; /* 画面下部に固定 */
+            position: sticky;
             bottom: 10px;
         }
-        /* 80時間超過時の警告スタイル */
-        .warning {
-            color: white;
-            background-color: #dc3545;
+        .warning { color: white; background-color: #dc3545; }
+
+        /* ▼ モーダルのスタイル（変更なし） ▼ */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 300px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .modal-row {
+            margin: 15px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .btn-circle {
+            width: 30px; height: 30px; border-radius: 50%;
+            border: none; background-color: #007bff; color: white;
+            font-size: 1.2em; cursor: pointer;
+        }
+        .btn-close {
+            background-color: #28a745; color: white; border: none;
+            padding: 10px 20px; border-radius: 4px; cursor: pointer;
+            width: 100%; margin-top: 10px; font-weight: bold;
         }
     </style>
 </head>
 <body>
     <h2>月間労働時間計算 (16日〜15日)</h2>
     
-    <div class="calendar-grid" id="calendar">
-        </div>
+    <div class="calendar-grid" id="calendar"></div>
 
     <div id="total-banner" class="total-area">
         総合計: <span id="grand-total-hours">0</span> 時間 <span id="grand-total-mins">0</span> 分<br>
@@ -99,90 +133,136 @@
         </div>
     </div>
 
+    <div id="detail-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="modal-title">16日の詳細設定</h3>
+            <div class="modal-row">
+                <span>チューター (コマ)</span>
+                <div>
+                    <button class="btn-circle" onclick="changeModalTutor(-1)">-</button>
+                    <span id="modal-tutor-count" style="margin: 0 10px; font-weight: bold; font-size: 1.2em;">0</span>
+                    <button class="btn-circle" onclick="changeModalTutor(1)">+</button>
+                </div>
+            </div>
+            <div class="modal-row">
+                <span>手動調整 (分)</span>
+                <input type="number" id="modal-adjust" style="width: 60px; text-align: right;" onchange="changeModalAdjust(this.value)">
+            </div>
+            <button class="btn-close" onclick="closeModal()">決定して閉じる</button>
+        </div>
+    </div>
+
     <script>
-        // 1. 16日から15日までの日付の配列（リスト）を作る
         const days = [];
         for (let i = 16; i <= 31; i++) days.push(i);
         for (let i = 1; i <= 15; i++) days.push(i);
 
-        // 2. 各日付のデータ（コマ数と調整時間）を保存する「状態（State）」
-        // 今回から、HTMLの入力欄を直接見に行くのではなく、この変数を書き換えるようにします。
-        const shiftData = days.map(() => ({ koma: 0, adjust: 0 }));
+        const shiftData = days.map(() => ({ koma: 0, tutor: 0, adjust: 0 }));
+        let currentEditingIndex = -1;
 
-        // 画面が開かれたときの処理
         window.onload = function() {
             renderCalendar();
             calculateAll();
         };
 
-        // 3. カレンダーのHTMLを生成する関数
         function renderCalendar() {
             const calendarDiv = document.getElementById('calendar');
-            calendarDiv.innerHTML = ''; // 一度中身を空にする
+            calendarDiv.innerHTML = '';
 
             days.forEach((day, index) => {
+                const data = shiftData[index];
                 const cell = document.createElement('div');
                 cell.className = 'day-cell';
 
-                // 上半分（コマ追加）、下半分（コマ減少）、調整入力欄を配置
+                // ▼ 状態に合わせて背景色のクラスを決定する ▼
+                const hasDetails = (data.tutor > 0 || data.adjust !== 0);
+                const hasKoma = (data.koma > 0);
+                
+                let bgColorClass = 'bg-empty'; // デフォルトは白
+                if (hasDetails) {
+                    bgColorClass = 'bg-detail'; // 詳細ありなら濃い青
+                } else if (hasKoma) {
+                    bgColorClass = 'bg-active'; // コマのみなら水色
+                }
+
+                // クラスを変数（bgColorClass）で埋め込む
                 cell.innerHTML = `
-                    <div class="half-up" onclick="changeKoma(${index}, 1)">
+                    <div class="half-up ${bgColorClass}" onclick="changeKoma(${index}, 1)">
+                        <div class="kebab-menu" onclick="event.stopPropagation(); openModal(${index})">⋮</div>
                         <div class="date-label">${day}日</div>
-                        <div class="koma-label">${shiftData[index].koma} コマ</div>
+                        <div class="koma-label">${data.koma} コマ</div>
                     </div>
                     <div class="half-down" onclick="changeKoma(${index}, -1)">
-                        ▼ 1コマ減らす
-                    </div>
-                    <div class="adjust-box">
-                        調整: <input type="number" value="${shiftData[index].adjust}" onchange="changeAdjust(${index}, this.value)"> 分
+                        ▼ 減らす
                     </div>
                 `;
                 calendarDiv.appendChild(cell);
             });
         }
 
-        // 4. コマ数を増減する処理
         function changeKoma(index, amount) {
             let newKoma = shiftData[index].koma + amount;
-            if (newKoma < 0) newKoma = 0; // 0未満にはならないようにする
-            
-            shiftData[index].koma = newKoma; // データを更新
-            renderCalendar(); // 画面を再描画
-            calculateAll();   // 合計を再計算
-        }
-
-        // 5. 手動調整の時間を更新する処理
-        function changeAdjust(index, value) {
-            shiftData[index].adjust = parseInt(value) || 0;
+            if (newKoma < 0) newKoma = 0;
+            shiftData[index].koma = newKoma;
+            renderCalendar();
             calculateAll();
         }
 
-        // 6. 全体の計算とアラート判定
+        function openModal(index) {
+            currentEditingIndex = index;
+            document.getElementById('modal-title').innerText = days[index] + '日の詳細設定';
+            document.getElementById('modal-tutor-count').innerText = shiftData[index].tutor;
+            document.getElementById('modal-adjust').value = shiftData[index].adjust;
+            document.getElementById('detail-modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('detail-modal').style.display = 'none';
+            renderCalendar();
+        }
+
+        function changeModalTutor(amount) {
+            if (currentEditingIndex === -1) return;
+            let newTutor = shiftData[currentEditingIndex].tutor + amount;
+            if (newTutor < 0) newTutor = 0;
+            shiftData[currentEditingIndex].tutor = newTutor;
+            document.getElementById('modal-tutor-count').innerText = newTutor;
+            calculateAll();
+        }
+
+        function changeModalAdjust(value) {
+            if (currentEditingIndex === -1) return;
+            shiftData[currentEditingIndex].adjust = parseInt(value) || 0;
+            calculateAll();
+        }
+
         function calculateAll() {
             let grandTotalMinutes = 0;
 
-            // 保存されているデータを使って計算
             shiftData.forEach(data => {
-                if (data.koma >= 1) {
-                    grandTotalMinutes += 35 + (80 * data.koma) + (10 * (data.koma - 1)) + data.adjust;
-                } else {
-                    grandTotalMinutes += data.adjust;
+                let k = data.koma;
+                let t = data.tutor;
+                let a = data.adjust;
+
+                if (k > 0 || t > 0 || a !== 0) {
+                    let dailyTotal = 35;
+                    if (k > 0) dailyTotal += (80 * k) + (10 * (k - 1));
+                    if (t > 0) dailyTotal += (50 * t) + (5 * (t - 1));
+                    dailyTotal += a;
+                    grandTotalMinutes += dailyTotal;
                 }
             });
 
-            // 時間と分に変換
             const hours = Math.floor(grandTotalMinutes / 60);
             const mins = grandTotalMinutes % 60;
 
-            // 画面の数字を更新
             document.getElementById('grand-total-hours').innerText = hours;
             document.getElementById('grand-total-mins').innerText = mins;
 
-            // ▼ 80時間（4800分）を超えた際のアラート処理 ▼
             const totalBanner = document.getElementById('total-banner');
             const warningMsg = document.getElementById('warning-msg');
             
-            if (grandTotalMinutes > 4800) { // 80時間 * 60分 = 4800分
+            if (grandTotalMinutes > 4800) {
                 totalBanner.classList.add('warning');
                 warningMsg.style.display = 'block';
             } else {
