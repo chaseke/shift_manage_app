@@ -1,0 +1,253 @@
+body {
+    font-family: sans-serif;
+    margin: 0;
+    display: flex;
+    height: 100vh;
+    background-color: #f0f2f5;
+}
+
+/* サイドバー */
+.sidebar {
+    width: 250px;
+    background-color: #343a40;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    /* スライドのアニメーション設定 */
+    transition: margin-left 0.3s ease;
+}
+
+.sidebar.collapsed {
+    margin-left: -250px;
+}
+
+.sidebar-header {
+    padding: 15px 20px;
+    font-size: 1.2em;
+    font-weight: bold;
+    background-color: #212529;
+    display: flex;
+    justify-content: space-between; /* 左右に振り分ける */
+    align-items: center;
+    color: #ffffff;
+}
+
+.header-title {
+    display: inline-block;
+}
+
+/* ▼ 追加: サイドバーを閉じる(×)ボタン ▼ */
+.close-sidebar-btn {
+    background: none;
+    border: none;
+    color: #ccc;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+}
+.close-sidebar-btn .material-symbols-outlined {
+    font-size: 1.5em;
+    margin-right: 0;
+}
+.close-sidebar-btn:hover {
+    color: white; /* マウスを乗せたら白く光らせる */
+}
+
+.nav-btn {
+    padding: 15px 20px;
+    background: none;
+    border: none;
+    color: #ccc;
+    text-align: left;
+    font-size: 1em;
+    cursor: pointer;
+    border-bottom: 1px solid #4b545c;
+}
+.nav-btn:hover { background-color: #4b545c; color: white; }
+.nav-btn.active { background-color: #007bff; color: white; font-weight: bold; }
+
+.sidebar-toggle-btn {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 1100;
+    background-color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 45px;
+    height: 45px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    cursor: pointer;
+    color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+}
+.sidebar-toggle-btn:active {
+    transrofm: scale(0.95);
+}
+.sidebar-toggle-btn .material-symbols-outlined {
+    margin-right: 0;
+    font-size: 1.5em;
+}
+.sidebar-toggle-btn:hover {
+    color: #007bff;
+}
+
+/* メインコンテンツ */
+.main-content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.open-sidebar-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #333;
+    padding: 0;
+    margin-bottom: 20px;
+    display: inline-flex;
+    align-items: center;
+}
+.open-sidebar-btn .material-symbols-outlined {
+    font-size: 2em; /* 少し大きめに */
+    margin-right: 0;
+}
+.open-sidebar-btn:hover {
+    color: #007bff;
+}
+
+#sidebar:not(.collapsed) + .main-content .open-sidebar-btn {
+    display: none;
+}
+
+.page { display: none; }
+.page.active { display: block; }
+
+.header-controls {
+    text-align: center;
+    margin-bottom: 15px;
+    font-weight: bold;
+}
+.header-controls select { font-size: 1.1em; padding: 3px; }
+.calc-income-btn {
+    margin-left: 15px; padding: 8px 15px; font-weight: bold;
+    background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;
+}
+
+/* カレンダー関連 */
+.calendar-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+    margin-bottom: 15px;
+    background-color: #4b545c; /* 暗いグレーの横長バー */
+    color: #ffffff;            /* 文字を白に */
+    padding: 10px 0;           /* 上下に余白を作る */
+    border-radius: 8px;        /* 角を丸くする */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* 軽い影をつける */
+}
+.weekday-header { text-align: center; font-weight: bold; color: inherit; }
+
+.date-range-badge {
+    display: inline-block;
+    margin: 0 15px;
+    padding: 6px 15px;
+    background-color: #e9ecef;
+    color: #333;
+    border-radius: 20px;
+    font-size: 0.95em;
+    font-weight: bold;
+    vertical-align: middle; /* プルダウンと高さを揃える */
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+/* カレンダーのマス */
+.day-cell {
+    background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex; flex-direction: column; overflow: hidden; height: 120px;
+}
+.empty-cell {
+    background: transparent; box-shadow: none;
+}
+.half-up {
+    flex: 1; cursor: pointer; text-align: left; padding: 8px; user-select: none; position: relative;
+}
+.bg-empty { background-color: #ffffff; }
+.bg-active { background-color: #cce5ff; }
+.bg-detail { background-color: #8cb3d9; }
+.half-up:active { opacity: 0.7; }
+
+.kebab-menu {
+    position: absolute; top: 5px; right: 5px; font-size: 1.2em; color: #333; cursor: pointer;
+    padding: 0 5px; border-radius: 4px;
+}
+.kebab-menu:hover { background-color: rgba(0,0,0,0.1); }
+
+.half-down {
+    height: 25px; background-color: #6c757d; cursor: pointer; text-align: center;
+    font-size: 0.8em; color: #ffffff; user-select: none; line-height: 25px;
+}
+.half-down:active { background-color: #5a6268; }
+
+.date-label { font-size: 1em; font-weight: bold; color: #333; }
+.koma-label { font-size: 0.85em; font-weight: bold; margin-top: 5px; line-height: 1.4; color: #444; }
+
+/* 合計表示・警告表示 */
+.total-area {
+    background-color: white; padding: 20px; border-radius: 8px; font-size: 1.3em;
+    font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center;
+}
+.warning-popup {
+    display: none; background-color: #fd7e14; color: white; padding: 15px;
+    border-radius: 8px; margin-top: 15px; font-weight: bold; text-align: center;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2); animation: popup 0.3s ease;
+}
+@keyframes popup { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* モーダル・時給設定・レギュラー設定 */
+.modal-overlay {
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); justify-content: center; align-items: center; z-index: 1000;
+}
+.modal-content { background: white; padding: 20px; border-radius: 8px; width: 300px; }
+.modal-row { margin: 15px 0; display: flex; justify-content: space-between; align-items: center; }
+.count-display { margin: 0 15px; font-weight: bold; font-size: 1.2em; display: inline-block; width: 20px; text-align: center; }
+.btn-circle { width: 30px; height: 30px; border-radius: 50%; border: none; background-color: #007bff; color: white; cursor: pointer; font-size: 1.2em; }
+.input-adjust { width: 60px; text-align: right; padding: 5px; }
+.btn-close { background-color: #28a745; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 10px; font-weight: bold; }
+
+.wage-container, .regular-list { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.wage-row { margin-bottom: 15px; display: flex; /*justify-content: space-between;*/ align-items: center; }
+.wage-row label { width: 160px; font-weight: bold; color: #555;}
+.wage-row input { width: 100px; text-align: right; padding: 5px; }
+.btn-apply { background-color: #ff9900; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 20px; font-size: 1.1em; font-weight: bold; }
+
+/* ▼ 追加: アイコンの見た目と位置調整 ▼ */
+.material-symbols-outlined {
+    vertical-align: bottom; /* 文字のベースラインに合わせる */
+    margin-right: 8px;      /* 右側の文字との間に少し余白を作る */
+    font-size: 1.2em;       /* 少しだけアイコンを大きくする */
+}
+
+/* ボタン内の要素を横並びで中央揃えにするための微調整 */
+.nav-btn, .btn-apply, .calc-income-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.nav-btn {
+    justify-content: flex-start; /* サイドバーのボタンは左寄せ */
+}

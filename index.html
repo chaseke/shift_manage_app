@@ -2,274 +2,122 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>シフト計算機（詳細設定付き）</title>
-    <style>
-        body {
-            font-family: sans-serif;
-            padding: 10px;
-            background-color: #f0f2f5;
-        }
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        .day-cell {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            height: 110px;
-        }
-        
-        /* ▼ 上半分（クリックで通常コマプラス）の基本設定 ▼ */
-        .half-up {
-            flex: 1;
-            cursor: pointer;
-            text-align: center;
-            padding-top: 5px;
-            user-select: none;
-            position: relative;
-            transition: background-color 0.2s; /* 色がフワッと変わるアニメーション */
-        }
-        
-        /* ▼ シフトの状態に合わせた背景色クラス ▼ */
-        .bg-empty { background-color: #ffffff; } /* シフトなし：白 */
-        .bg-active { background-color: #cce5ff; } /* 通常シフトのみ：水色 */
-        .bg-detail { background-color: #8cb3d9; } /* 詳細あり：濃い青（水色と同系色） */
-        
-        .half-up:active { opacity: 0.7; } /* クリックした瞬間の反応 */
-        
-        .kebab-menu {
-            position: absolute;
-            top: 5px;
-            right: 8px;
-            font-size: 1.2em;
-            color: #333;
-            cursor: pointer;
-            padding: 0 5px;
-            border-radius: 4px;
-        }
-        .kebab-menu:hover { background-color: rgba(0,0,0,0.1); }
-
-        /* ▼ 下半分（濃いグレーに変更） ▼ */
-        .half-down {
-            height: 25px;
-            background-color: #6c757d; /* 落ち着いた濃いグレー */
-            cursor: pointer;
-            text-align: center;
-            font-size: 0.8em;
-            color: #ffffff; /* 文字色は白に変更して見やすく */
-            user-select: none;
-            line-height: 25px;
-        }
-        .half-down:active { background-color: #5a6268; }
-
-        .date-label { font-size: 0.9em; color: #555; }
-        .koma-label { font-size: 1.4em; font-weight: bold; margin-top: 2px; }
-
-        .total-area {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            font-size: 1.3em;
-            font-weight: bold;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            text-align: center;
-            position: sticky;
-            bottom: 10px;
-        }
-        .warning { color: white; background-color: #dc3545; }
-
-        /* ▼ モーダルのスタイル（変更なし） ▼ */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .modal-content {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            width: 80%;
-            max-width: 300px;
-            text-align: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-        .modal-row {
-            margin: 15px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .btn-circle {
-            width: 30px; height: 30px; border-radius: 50%;
-            border: none; background-color: #007bff; color: white;
-            font-size: 1.2em; cursor: pointer;
-        }
-        .btn-close {
-            background-color: #28a745; color: white; border: none;
-            padding: 10px 20px; border-radius: 4px; cursor: pointer;
-            width: 100%; margin-top: 10px; font-weight: bold;
-        }
-    </style>
+    <title>Shift management</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
 </head>
 <body>
-    <h2>月間労働時間計算 (16日〜15日)</h2>
-    
-    <div class="calendar-grid" id="calendar"></div>
+    <div id="sidebar" class="sidebar collapsed">
+        <div class="sidebar-header">
+            <button onclick="toggleSidebar()" class="close-sidebar-btn" title="閉じる">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <button class="nav-btn active" onclick="switchPage('shift')"><span class="material-symbols-outlined">calendar_month</span> シフト管理</button>
+        <button class="nav-btn" onclick="switchPage('regular')"><span class="material-symbols-outlined">settings</span> レギュラー授業</button>
+        <button class="nav-btn" onclick="switchPage('wage')"><span class="material-symbols-outlined">payments</span> 時給登録</button>
+    </div>
 
-    <div id="total-banner" class="total-area">
-        総合計: <span id="grand-total-hours">0</span> 時間 <span id="grand-total-mins">0</span> 分<br>
-        <div id="warning-msg" style="font-size: 0.8em; margin-top: 5px; display: none;">
-            ⚠️ 労働時間が80時間を超過しています！
+    <div class="main-content">
+        <button onclick="toggleSidebar()" class="open-sidebar-btn" title="メニューを開く">
+            <span class="material-symbols-outlined">menu</span>
+        </button>
+        <div id="page-shift" class="page active">
+            <div class="header-controls">
+                <select id="select-year" onchange="initCalendar()"></select> 年
+                <select id="select-month" onchange="initCalendar()"></select> 月度
+
+                <span id="date-range-label" class="date-range-badge"></span>
+
+                <button class="calc-income-btn" style="background-color: #17a2b8;" onclick="applyRegularShifts()">
+                    <span class="material-symbols-outlined">event_repeat</span> レギュラー一括反映
+                </button>
+                
+                <button class="calc-income-btn" onclick="showExpectedIncome()">
+                    <span class="material-symbols-outlined">double_arrow</span> 予想収入を計算
+                </button>
+            </div>
+            
+            <div class="calendar-header">
+                <div class="weekday-header">日</div><div class="weekday-header">月</div>
+                <div class="weekday-header">火</div><div class="weekday-header">水</div>
+                <div class="weekday-header">木</div><div class="weekday-header">金</div>
+                <div class="weekday-header">土</div>
+            </div>
+            
+            <div class="calendar-grid" id="calendar"></div>
+
+            <div id="total-banner" class="total-area">
+                総合計時間: <span id="grand-total-hours">0</span> 時間 <span id="grand-total-mins">0</span> 分
+            </div>
+            <div id="warning-msg" class="warning-popup">
+                <span class="material-symbols-outlined">warning</span> 合計勤務時間が80時間を超えています
+            </div>
+        </div>
+
+        <div id="page-regular" class="page">
+            <h3>曜日ごとのレギュラー登録</h3>
+            <div class="regular-list" id="regular-container"></div>
+            <button class="btn-apply" onclick="applyRegularShifts()"><span class="material-symbols-outlined">check_circle</span> カレンダーに一括反映</button>
+        </div>
+
+        <div id="page-wage" class="page">
+            <h3>時給・交通費設定</h3>
+            <div class="wage-container">
+                <div class="wage-row">
+                    <label>事務時間 </label>
+                    <input type="number" id="wage-admin" value="1100"> 円
+                </div>
+                <div class="wage-row">
+                    <label>小中学生 </label>
+                    <input type="number" id="wage-jrhigh" value="1300"> 円
+                </div>
+                <div class="wage-row">
+                    <label>高校生 </label>
+                    <input type="number" id="wage-high" value="1460"> 円
+                </div>
+                <div class="wage-row">
+                    <label>チューター </label>
+                    <input type="number" id="wage-tutor" value="1200"> 円
+                </div>
+                <hr>
+                <div class="wage-row">
+                    <label>1日あたりの交通費 </label>
+                    <input type="number" id="wage-transport" value="0"> 円
+                </div>
+                <button class="btn-apply" onclick="saveWageSettings()"><span class="material-symbols-outlined">save</span> 設定を保存</button>
+            </div>
         </div>
     </div>
 
     <div id="detail-modal" class="modal-overlay">
         <div class="modal-content">
-            <h3 id="modal-title">16日の詳細設定</h3>
+            <h3 id="modal-title">詳細設定</h3>
             <div class="modal-row">
                 <span>チューター (コマ)</span>
                 <div>
                     <button class="btn-circle" onclick="changeModalTutor(-1)">-</button>
-                    <span id="modal-tutor-count" style="margin: 0 10px; font-weight: bold; font-size: 1.2em;">0</span>
+                    <span id="modal-tutor-count" class="count-display">0</span>
                     <button class="btn-circle" onclick="changeModalTutor(1)">+</button>
                 </div>
             </div>
             <div class="modal-row">
                 <span>手動調整 (分)</span>
-                <input type="number" id="modal-adjust" style="width: 60px; text-align: right;" onchange="changeModalAdjust(this.value)">
+                <input type="number" id="modal-adjust" class="input-adjust" onchange="changeModalAdjust(this.value)">
+            </div>
+            <hr>
+            <div class="modal-row">
+                <span>高校生のコマ数<br><small>(総コマ数内での割合)</small></span>
+                <div>
+                    <button class="btn-circle" onclick="changeModalHighSchool(-1)">-</button>
+                    <span id="modal-hs-count" class="count-display">0</span>
+                    <button class="btn-circle" onclick="changeModalHighSchool(1)">+</button>
+                </div>
             </div>
             <button class="btn-close" onclick="closeModal()">決定して閉じる</button>
         </div>
     </div>
 
-    <script>
-        const days = [];
-        for (let i = 16; i <= 31; i++) days.push(i);
-        for (let i = 1; i <= 15; i++) days.push(i);
-
-        const shiftData = days.map(() => ({ koma: 0, tutor: 0, adjust: 0 }));
-        let currentEditingIndex = -1;
-
-        window.onload = function() {
-            renderCalendar();
-            calculateAll();
-        };
-
-        function renderCalendar() {
-            const calendarDiv = document.getElementById('calendar');
-            calendarDiv.innerHTML = '';
-
-            days.forEach((day, index) => {
-                const data = shiftData[index];
-                const cell = document.createElement('div');
-                cell.className = 'day-cell';
-
-                // ▼ 状態に合わせて背景色のクラスを決定する ▼
-                const hasDetails = (data.tutor > 0 || data.adjust !== 0);
-                const hasKoma = (data.koma > 0);
-                
-                let bgColorClass = 'bg-empty'; // デフォルトは白
-                if (hasDetails) {
-                    bgColorClass = 'bg-detail'; // 詳細ありなら濃い青
-                } else if (hasKoma) {
-                    bgColorClass = 'bg-active'; // コマのみなら水色
-                }
-
-                // クラスを変数（bgColorClass）で埋め込む
-                cell.innerHTML = `
-                    <div class="half-up ${bgColorClass}" onclick="changeKoma(${index}, 1)">
-                        <div class="kebab-menu" onclick="event.stopPropagation(); openModal(${index})">⋮</div>
-                        <div class="date-label">${day}日</div>
-                        <div class="koma-label">${data.koma} コマ</div>
-                    </div>
-                    <div class="half-down" onclick="changeKoma(${index}, -1)">
-                        ▼ 減らす
-                    </div>
-                `;
-                calendarDiv.appendChild(cell);
-            });
-        }
-
-        function changeKoma(index, amount) {
-            let newKoma = shiftData[index].koma + amount;
-            if (newKoma < 0) newKoma = 0;
-            shiftData[index].koma = newKoma;
-            renderCalendar();
-            calculateAll();
-        }
-
-        function openModal(index) {
-            currentEditingIndex = index;
-            document.getElementById('modal-title').innerText = days[index] + '日の詳細設定';
-            document.getElementById('modal-tutor-count').innerText = shiftData[index].tutor;
-            document.getElementById('modal-adjust').value = shiftData[index].adjust;
-            document.getElementById('detail-modal').style.display = 'flex';
-        }
-
-        function closeModal() {
-            document.getElementById('detail-modal').style.display = 'none';
-            renderCalendar();
-        }
-
-        function changeModalTutor(amount) {
-            if (currentEditingIndex === -1) return;
-            let newTutor = shiftData[currentEditingIndex].tutor + amount;
-            if (newTutor < 0) newTutor = 0;
-            shiftData[currentEditingIndex].tutor = newTutor;
-            document.getElementById('modal-tutor-count').innerText = newTutor;
-            calculateAll();
-        }
-
-        function changeModalAdjust(value) {
-            if (currentEditingIndex === -1) return;
-            shiftData[currentEditingIndex].adjust = parseInt(value) || 0;
-            calculateAll();
-        }
-
-        function calculateAll() {
-            let grandTotalMinutes = 0;
-
-            shiftData.forEach(data => {
-                let k = data.koma;
-                let t = data.tutor;
-                let a = data.adjust;
-
-                if (k > 0 || t > 0 || a !== 0) {
-                    let dailyTotal = 35;
-                    if (k > 0) dailyTotal += (80 * k) + (10 * (k - 1));
-                    if (t > 0) dailyTotal += (50 * t) + (5 * (t - 1));
-                    dailyTotal += a;
-                    grandTotalMinutes += dailyTotal;
-                }
-            });
-
-            const hours = Math.floor(grandTotalMinutes / 60);
-            const mins = grandTotalMinutes % 60;
-
-            document.getElementById('grand-total-hours').innerText = hours;
-            document.getElementById('grand-total-mins').innerText = mins;
-
-            const totalBanner = document.getElementById('total-banner');
-            const warningMsg = document.getElementById('warning-msg');
-            
-            if (grandTotalMinutes > 4800) {
-                totalBanner.classList.add('warning');
-                warningMsg.style.display = 'block';
-            } else {
-                totalBanner.classList.remove('warning');
-                warningMsg.style.display = 'none';
-            }
-        }
-    </script>
+    <script type="module" src="../src/main.js"></script>
 </body>
 </html>
